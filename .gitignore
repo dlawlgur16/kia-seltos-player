@@ -1,0 +1,7 @@
+# Video files (using Vimeo for streaming)
+video/
+
+# System files
+nul
+.DS_Store
+Thumbs.db

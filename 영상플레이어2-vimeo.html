@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KIA SELTOS - Digital Showroom (Vimeo)</title>
+    <!-- Vimeo Player API -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Full Screen Video Stage */
+        .video-stage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .video-stage iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-stage img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .video-stage img.loaded {
+            opacity: 1;
+        }
+
+        .empty-placeholder {
+            text-align: center;
+            opacity: 0.3;
+        }
+
+        .empty-placeholder svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 24px;
+        }
+
+        .empty-placeholder p {
+            font-size: 0.875rem;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        /* Top Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 40px 60px 20px 60px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .color-palette-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .logo-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 48px;
+            width: auto;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .model {
+            font-size: 0.875rem;
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            opacity: 0.8;
+        }
+
+        /* View Switcher (Top Right) */
+        .view-switcher {
+            display: flex;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 50px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            position: relative;
+        }
+
+        .view-slider {
+            position: absolute;
+            top: 4px;
+            left: 0;
+            height: calc(100% - 8px);
+            background: #fff;
+            border-radius: 50px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+            z-index: 0;
+        }
+
+        .view-tab {
+            padding: 12px 32px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: color 0.3s ease;
+            font-family: inherit;
+            position: relative;
+            z-index: 1;
+        }
+
+        .view-tab:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .view-tab.active {
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Color Palette */
+        .color-palette {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 16px;
+            background: rgba(17, 17, 17, 0.6);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .color-palette.slide-out-left {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        .color-palette.slide-out-right {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+
+        .color-palette.slide-in-left {
+            animation: slideInFromLeft 0.4s ease forwards;
+        }
+
+        .color-palette.slide-in-right {
+            animation: slideInFromRight 0.4s ease forwards;
+        }
+
+        @keyframes slideInFromLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInFromRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .color-item {
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .color-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+
+        .color-swatch::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-swatch.active {
+            border-color: #fff;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2), 0 2px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .color-swatch.active::after {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 풀재생/낮/밤 버튼 */
+        .time-controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .time-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 110px;
+            padding: 12px 0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: rgba(17, 17, 17, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .time-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .time-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .sun-icon {
+            fill: #FFD700;
+        }
+
+        .moon-icon {
+            fill: #C0C0C0;
+        }
+
+        .play-icon {
+            fill: none;
+            stroke: #69db7c;
+            stroke-width: 2;
+        }
+
+        /* Page transition animations */
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .page-transition-out {
+            animation: fadeOut 0.5s ease forwards;
+        }
+
+        .page-transition-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 24px 24px;
+            }
+
+            .logo img {
+                height: 36px;
+            }
+
+            .model {
+                font-size: 0.75rem;
+            }
+
+            .view-tab {
+                padding: 10px 24px;
+                font-size: 0.7rem;
+            }
+
+            .color-palette {
+                gap: 8px;
+                padding: 10px 16px;
+            }
+
+            .color-swatch {
+                width: 36px;
+                height: 36px;
+            }
+
+            .time-controls {
+                bottom: 20px;
+            }
+
+            .time-btn {
+                min-width: 80px;
+                padding: 10px 16px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Video Stage -->
+    <div class="video-stage" id="videoStage">
+        <div class="empty-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <polygon points="5,3 19,12 5,21" />
+            </svg>
+            <p>Select a Color</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-top">
+            <div class="logo-section">
+                <div class="logo">
+                    <img src="logo/kia-logo.png" alt="KIA">
+                </div>
+                <div class="model">SELTOS</div>
+            </div>
+            <div class="controls-section">
+                <nav class="view-switcher">
+                    <div class="view-slider" id="viewSlider"></div>
+                    <button class="view-tab active" data-view="exterior">Exterior</button>
+                    <button class="view-tab" data-view="interior">Interior</button>
+                </nav>
+                <div class="color-palette-container">
+                    <div class="color-palette" id="colorPalette"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 풀재생/낮/밤 버튼 -->
+    <div class="time-controls">
+        <button class="time-btn" id="fullBtn" data-time="full">
+            <svg viewBox="0 0 24 24" class="play-icon">
+                <polygon points="5,3 19,12 5,21" fill="#69db7c"/>
+            </svg>
+            FULL
+        </button>
+        <button class="time-btn" id="dayBtn" data-time="day">
+            <svg viewBox="0 0 24 24" class="sun-icon">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3" stroke="#FFD700" stroke-width="2"/>
+                <line x1="12" y1="21" x2="12" y2="23" stroke="#FFD700" stroke-width="2"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="#FFD700" stroke-width="2"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="#FFD700" stroke-width="2"/>
+                <line x1="1" y1="12" x2="3" y2="12" stroke="#FFD700" stroke-width="2"/>
+                <line x1="21" y1="12" x2="23" y2="12" stroke="#FFD700" stroke-width="2"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="#FFD700" stroke-width="2"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="#FFD700" stroke-width="2"/>
+            </svg>
+            DAY
+        </button>
+        <button class="time-btn" id="nightBtn" data-time="night">
+            <svg viewBox="0 0 24 24" class="moon-icon">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            NIGHT
+        </button>
+    </div>
+
+    <script>
+        /**
+         * ====================================
+         * [설정 방법]
+         * ====================================
+         *
+         * 1. Vimeo에 영상을 업로드합니다.
+         * 2. 영상 URL에서 ID를 복사합니다. (예: vimeo.com/123456789 → 123456789)
+         * 3. 아래 DATA에서 vimeoId를 해당 ID로 변경합니다.
+         * 4. dayTime과 nightTime은 초 단위로 설정합니다.
+         *
+         * ====================================
+         */
+
+        // Data Configuration
+        const DATA = {
+            exterior: [
+                { name: "Snow White Pearl", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#f8fafc", dayTime: 0, nightTime: 30 },
+                { name: "X-LINE Iceberg Green", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#a7c4bc", dayTime: 0, nightTime: 30 },
+                { name: "Two-Tone Snow White Pearl", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#e8eef0", dayTime: 0, nightTime: 30 },
+                { name: "Two-Tone Iceberg Green", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#a7c4bc", dayTime: 0, nightTime: 30 },
+                { name: "Gravity Gray", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#6b7280", dayTime: 0, nightTime: 30 },
+                { name: "Ivory Silver", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#c0c0c0", dayTime: 0, nightTime: 30 },
+                { name: "Fusion Black", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#1a1a1a", dayTime: 0, nightTime: 30 },
+                { name: "Frost Blue", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#87CEEB", dayTime: 0, nightTime: 30 }
+            ],
+            interior: [
+                { name: "Maroon Brown", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#A0522D", dayTime: 0, nightTime: 30 },
+                { name: "X-LINE Smoky Black", vimeoId: "YOUR_VIMEO_ID_HERE", color: "#2d2d2d", dayTime: 0, nightTime: 30 }
+            ]
+        };
+
+        // State
+        let currentView = 'exterior';
+        let currentColorIndex = null;
+        let currentPlayer = null;
+        let currentVideoData = null;
+
+        // DOM Elements
+        const videoStage = document.getElementById('videoStage');
+        const colorPalette = document.getElementById('colorPalette');
+        const viewTabs = document.querySelectorAll('.view-tab');
+        const viewSlider = document.getElementById('viewSlider');
+        const dayBtn = document.getElementById('dayBtn');
+        const nightBtn = document.getElementById('nightBtn');
+        const fullBtn = document.getElementById('fullBtn');
+
+        // 버튼 이벤트
+        fullBtn.addEventListener('click', () => {
+            if (currentPlayer) {
+                currentPlayer.setCurrentTime(0);
+                currentPlayer.play();
+                setActiveTimeBtn('full');
+            }
+        });
+
+        dayBtn.addEventListener('click', () => {
+            if (currentPlayer && currentVideoData) {
+                currentPlayer.setCurrentTime(currentVideoData.dayTime || 0);
+                currentPlayer.play();
+                setActiveTimeBtn('day');
+            }
+        });
+
+        nightBtn.addEventListener('click', () => {
+            if (currentPlayer && currentVideoData) {
+                currentPlayer.setCurrentTime(currentVideoData.nightTime || 30);
+                currentPlayer.play();
+                setActiveTimeBtn('night');
+            }
+        });
+
+        function setActiveTimeBtn(time) {
+            fullBtn.classList.toggle('active', time === 'full');
+            dayBtn.classList.toggle('active', time === 'day');
+            nightBtn.classList.toggle('active', time === 'night');
+        }
+
+        // Initialize
+        function init() {
+            renderColorPalette();
+            setupViewSwitcher();
+            updateSliderPosition();
+            selectColor(0);
+        }
+
+        // Update Slider Position
+        function updateSliderPosition() {
+            const activeTab = document.querySelector('.view-tab.active');
+            if (activeTab && viewSlider) {
+                const tabRect = activeTab.getBoundingClientRect();
+                const switcherRect = activeTab.parentElement.getBoundingClientRect();
+                const left = tabRect.left - switcherRect.left;
+                const width = tabRect.width;
+
+                viewSlider.style.width = width + 'px';
+                viewSlider.style.transform = `translateX(${left}px)`;
+            }
+        }
+
+        // Render Color Palette
+        function renderColorPalette() {
+            const colors = DATA[currentView];
+            colorPalette.innerHTML = '';
+
+            colors.forEach((item, index) => {
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.background = item.color;
+
+                if (index === currentColorIndex) {
+                    swatch.classList.add('active');
+                    colorItem.style.background = 'rgba(255, 255, 255, 0.1)';
+                }
+
+                const colorName = document.createElement('span');
+                colorName.className = 'color-name';
+                colorName.textContent = item.name;
+                colorName.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.85rem; font-weight: 400; white-space: nowrap;';
+
+                colorItem.appendChild(swatch);
+                colorItem.appendChild(colorName);
+
+                colorItem.addEventListener('click', () => selectColor(index));
+                colorPalette.appendChild(colorItem);
+            });
+        }
+
+        // Select Color
+        function selectColor(index) {
+            const item = DATA[currentView][index];
+            currentColorIndex = index;
+            currentVideoData = item;
+
+            // Update active state
+            document.querySelectorAll('.color-item').forEach((colorItem, i) => {
+                const swatch = colorItem.querySelector('.color-swatch');
+                if (i === index) {
+                    swatch.classList.add('active');
+                    colorItem.style.background = 'rgba(255, 255, 255, 0.1)';
+                } else {
+                    swatch.classList.remove('active');
+                    colorItem.style.background = 'transparent';
+                }
+            });
+
+            // Load Vimeo video
+            loadVimeoVideo(item);
+        }
+
+        // Load Vimeo Video
+        function loadVimeoVideo(item) {
+            // Destroy previous player
+            if (currentPlayer) {
+                currentPlayer.destroy();
+                currentPlayer = null;
+            }
+
+            // Check if Vimeo ID is set
+            if (item.vimeoId && item.vimeoId !== 'YOUR_VIMEO_ID_HERE') {
+                videoStage.innerHTML = `
+                    <iframe
+                        id="vimeoPlayer"
+                        src="https://player.vimeo.com/video/${item.vimeoId}?autoplay=1&loop=1&muted=1&background=1&quality=1080p"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowfullscreen
+                        style="width:100%; height:100%; border:none;">
+                    </iframe>
+                `;
+
+                // Initialize Vimeo Player API
+                const iframe = document.getElementById('vimeoPlayer');
+                currentPlayer = new Vimeo.Player(iframe);
+
+                setActiveTimeBtn('full');
+
+                // Auto-start at beginning
+                currentPlayer.ready().then(() => {
+                    currentPlayer.setCurrentTime(0);
+                });
+            } else {
+                // Vimeo ID not set - show placeholder
+                videoStage.innerHTML = `
+                    <div class="empty-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <polygon points="5,3 19,12 5,21" />
+                        </svg>
+                        <p style="margin-top: 20px; line-height: 1.6;">Vimeo ID가 설정되지 않았습니다.<br>
+                        <span style="font-size: 0.7rem; opacity: 0.6;">JavaScript에서 vimeoId를 설정해주세요.</span></p>
+                    </div>
+                `;
+                currentPlayer = null;
+                setActiveTimeBtn(null);
+            }
+        }
+
+        // Setup View Switcher
+        function setupViewSwitcher() {
+            viewTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const view = tab.dataset.view;
+
+                    if (view === currentView) return;
+
+                    // Determine slide direction
+                    const isMovingToInterior = (currentView === 'exterior' && view === 'interior');
+                    const slideOutClass = isMovingToInterior ? 'slide-out-left' : 'slide-out-right';
+                    const slideInClass = isMovingToInterior ? 'slide-in-right' : 'slide-in-left';
+
+                    // Update active tab
+                    viewTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Animate slider
+                    updateSliderPosition();
+
+                    // Slide out color palette
+                    colorPalette.classList.remove('slide-in-left', 'slide-in-right');
+                    colorPalette.classList.add(slideOutClass);
+
+                    // Page transition
+                    videoStage.classList.add('page-transition-out');
+
+                    setTimeout(() => {
+                        // Switch view
+                        currentView = view;
+                        currentColorIndex = null;
+
+                        // Render new palette
+                        renderColorPalette();
+
+                        // Auto-select first color of new view
+                        selectColor(0);
+
+                        // Slide in color palette
+                        colorPalette.classList.remove(slideOutClass);
+                        colorPalette.classList.add(slideInClass);
+
+                        // Fade in video
+                        videoStage.classList.remove('page-transition-out');
+                        videoStage.classList.add('page-transition-in');
+
+                        setTimeout(() => {
+                            videoStage.classList.remove('page-transition-in');
+                            colorPalette.classList.remove('slide-in-left', 'slide-in-right');
+                        }, 500);
+                    }, 300);
+                });
+            });
+        }
+
+        // Auto-hide controls
+        const header = document.querySelector('.header');
+        const timeControls = document.querySelector('.time-controls');
+        let hideControlsTimeout;
+
+        function showControls() {
+            header.style.opacity = '1';
+            timeControls.style.opacity = '1';
+            resetHideTimer();
+        }
+
+        function hideControls() {
+            header.style.opacity = '0';
+            timeControls.style.opacity = '0';
+        }
+
+        function resetHideTimer() {
+            clearTimeout(hideControlsTimeout);
+            hideControlsTimeout = setTimeout(() => {
+                hideControls();
+            }, 3000);
+        }
+
+        // 마우스 움직임 및 터치 이벤트 감지
+        document.addEventListener('mousemove', showControls);
+        document.addEventListener('touchstart', showControls);
+        document.addEventListener('touchmove', showControls);
+        document.addEventListener('click', showControls);
+
+        // 헤더/버튼에 transition 추가
+        if (header) {
+            header.style.transition = 'opacity 0.4s ease';
+        }
+        if (timeControls) {
+            timeControls.style.transition = 'opacity 0.4s ease';
+        }
+
+        // 초기 타이머 시작
+        resetHideTimer();
+
+        // Start
+        init();
+    </script>
+</body>
+
+</html>

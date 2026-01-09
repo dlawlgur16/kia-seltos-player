@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KIA SELTOS - Grid Layout</title>
+    <!-- Vimeo Player API -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 24px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+        }
+
+        .logo span {
+            color: #bb162b;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.08);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .nav-tab {
+            padding: 10px 24px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            background: #fff;
+            color: #000;
+        }
+
+        .nav-tab:hover:not(.active) {
+            color: #fff;
+        }
+
+        /* Hero Section - Video Player */
+        .hero {
+            height: 70vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .hero-video {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .hero-video iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .hero-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .hero-placeholder svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 60px 48px 40px;
+            background: linear-gradient(to top, #0a0a0a, transparent);
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 24px;
+        }
+
+        /* Time Controls */
+        .time-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .time-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .time-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .time-btn.active {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .time-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Grid Section */
+        .grid-section {
+            padding: 60px 48px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .color-count {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+        }
+
+        /* Card Grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .color-card {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .color-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+
+        .color-card.active {
+            border-color: #bb162b;
+            box-shadow: 0 0 0 3px rgba(187, 22, 43, 0.4), 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .card-image {
+            aspect-ratio: 16/10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        }
+
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s;
+        }
+
+        .color-card:hover .card-image img {
+            transform: scale(1.05);
+        }
+
+        .card-color-preview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-swatch {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.9);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .card-info {
+            padding: 20px;
+            background: #fff;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #1a1a1a;
+        }
+
+        .card-code {
+            font-size: 0.8rem;
+            color: #888;
+            font-family: monospace;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 6px 12px;
+            background: #bb162b;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 40px 48px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px 24px;
+            }
+
+            .hero {
+                height: 50vh;
+            }
+
+            .hero-overlay {
+                padding: 40px 24px 24px;
+            }
+
+            .hero-title {
+                font-size: 1.8rem;
+            }
+
+            .grid-section {
+                padding: 40px 24px;
+            }
+
+            .card-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 16px;
+            }
+
+            .nav-tabs {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">KIA <span>SELTOS</span></div>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="ext">EXTERIOR</button>
+            <button class="nav-tab" data-tab="int">INTERIOR</button>
+        </nav>
+    </header>
+
+    <!-- Hero Video Section -->
+    <section class="hero">
+        <div class="hero-video" id="videoContainer">
+            <div class="hero-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <polygon points="5,3 19,12 5,21"/>
+                </svg>
+                <p>Select a color below</p>
+            </div>
+        </div>
+        <div class="hero-overlay">
+            <h1 class="hero-title" id="currentTitle">Choose Your Color</h1>
+            <p class="hero-subtitle" id="currentSubtitle">Click a color card to preview</p>
+            <div class="time-controls" id="timeControls" style="display: none;">
+                <button class="time-btn" id="fullBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5,3 19,12 5,21" fill="#10b981"/>
+                    </svg>
+                    FULL
+                </button>
+                <button class="time-btn" id="dayBtn">
+                    <svg viewBox="0 0 24 24" fill="#f59e0b">
+                        <circle cx="12" cy="12" r="5"/>
+                    </svg>
+                    DAY
+                </button>
+                <button class="time-btn" id="nightBtn">
+                    <svg viewBox="0 0 24 24" fill="#94a3b8">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                    NIGHT
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Color Grid Section -->
+    <section class="grid-section">
+        <div class="section-header">
+            <h2 class="section-title" id="sectionTitle">Exterior Colors</h2>
+            <span class="color-count" id="colorCount">6 colors available</span>
+        </div>
+        <div class="card-grid" id="cardGrid">
+            <!-- Cards will be generated by JavaScript -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span>KIA SELTOS Digital Showroom</span>
+        <span>Powered by Vimeo</span>
+    </footer>
+
+    <script>
+        // Video Data
+        const videoData = {
+            ext: [
+                { title: "Snow White Pearl", code: "SWP", vimeoId: "", color: "#f8fafc", dayTime: 0, nightTime: 30, image: "pic/ext/two-tone-snow-white-pearl.png" },
+                { title: "Gravity Gray", code: "KLG", vimeoId: "", color: "#4a5568", dayTime: 0, nightTime: 30, image: "pic/ext/gravity-gray.png" },
+                { title: "Fusion Black", code: "ABP", vimeoId: "", color: "#1a1a1a", dayTime: 0, nightTime: 30, image: "pic/ext/fusion-black.png" },
+                { title: "Frost Blue", code: "JBU", vimeoId: "", color: "#a8d5e5", dayTime: 0, nightTime: 30, image: "pic/ext/frost-blue.png" },
+                { title: "Ivory Silver", code: "ISG", vimeoId: "", color: "#c9c5bd", dayTime: 0, nightTime: 30, image: "pic/ext/ivory-silver.png" },
+                { title: "Iceberg Green", code: "IBG", vimeoId: "", color: "#4a7766", dayTime: 0, nightTime: 30, image: "pic/ext/two-tone-iceberg-green.png" }
+            ],
+            int: [
+                { title: "Black Interior", code: "BLK", vimeoId: "", color: "#1a1a1a", dayTime: 0, nightTime: 30 },
+                { title: "Gray Two-tone", code: "GRT", vimeoId: "", color: "#6b7280", dayTime: 0, nightTime: 30 },
+                { title: "Brown Package", code: "BRP", vimeoId: "", color: "#78350f", dayTime: 0, nightTime: 30 }
+            ]
+        };
+
+        let currentTab = 'ext';
+        let currentPlayer = null;
+        let currentVideoData = null;
+
+        const videoContainer = document.getElementById('videoContainer');
+        const currentTitle = document.getElementById('currentTitle');
+        const currentSubtitle = document.getElementById('currentSubtitle');
+        const timeControls = document.getElementById('timeControls');
+        const cardGrid = document.getElementById('cardGrid');
+        const sectionTitle = document.getElementById('sectionTitle');
+        const colorCount = document.getElementById('colorCount');
+        const navTabs = document.querySelectorAll('.nav-tab');
+
+        const fullBtn = document.getElementById('fullBtn');
+        const dayBtn = document.getElementById('dayBtn');
+        const nightBtn = document.getElementById('nightBtn');
+
+        // Tab switching
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                if (newTab === currentTab) return;
+
+                navTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = newTab;
+                renderCards();
+                resetPlayer();
+            });
+        });
+
+        // Time controls
+        fullBtn.addEventListener('click', () => {
+            if (currentPlayer) {
+                currentPlayer.setCurrentTime(0);
+                currentPlayer.play();
+                setActiveTimeBtn('full');
+            }
+        });
+
+        dayBtn.addEventListener('click', () => {
+            if (currentPlayer && currentVideoData) {
+                currentPlayer.setCurrentTime(currentVideoData.dayTime);
+                currentPlayer.play();
+                setActiveTimeBtn('day');
+            }
+        });
+
+        nightBtn.addEventListener('click', () => {
+            if (currentPlayer && currentVideoData) {
+                currentPlayer.setCurrentTime(currentVideoData.nightTime);
+                currentPlayer.play();
+                setActiveTimeBtn('night');
+            }
+        });
+
+        function setActiveTimeBtn(type) {
+            [fullBtn, dayBtn, nightBtn].forEach(btn => btn.classList.remove('active'));
+            if (type === 'full') fullBtn.classList.add('active');
+            if (type === 'day') dayBtn.classList.add('active');
+            if (type === 'night') nightBtn.classList.add('active');
+        }
+
+        function renderCards() {
+            const data = videoData[currentTab];
+            sectionTitle.textContent = currentTab === 'ext' ? 'Exterior Colors' : 'Interior Colors';
+            colorCount.textContent = `${data.length} colors available`;
+
+            cardGrid.innerHTML = data.map((item, index) => `
+                <div class="color-card" data-index="${index}">
+                    <div class="card-image">
+                        ${item.image
+                            ? `<img src="${item.image}" alt="${item.title}">`
+                            : `<div class="card-color-preview"><div class="color-swatch" style="background: ${item.color}"></div></div>`
+                        }
+                    </div>
+                    <div class="card-info">
+                        <div class="card-title">${item.title}</div>
+                        <div class="card-code">${item.code}</div>
+                    </div>
+                    ${item.vimeoId ? '<span class="card-badge">Preview Available</span>' : ''}
+                </div>
+            `).join('');
+
+            // Add click events
+            document.querySelectorAll('.color-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const index = parseInt(card.dataset.index);
+                    selectColor(index);
+
+                    document.querySelectorAll('.color-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                });
+            });
+        }
+
+        function selectColor(index) {
+            const video = videoData[currentTab][index];
+            currentVideoData = video;
+
+            currentTitle.textContent = video.title;
+            currentSubtitle.textContent = `Code: ${video.code}`;
+
+            if (video.vimeoId) {
+                videoContainer.innerHTML = `
+                    <iframe
+                        id="vimeoPlayer"
+                        src="https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&loop=1&muted=1&background=1&quality=1080p"
+                        allow="autoplay; fullscreen"
+                        allowfullscreen>
+                    </iframe>
+                `;
+
+                const iframe = document.getElementById('vimeoPlayer');
+                currentPlayer = new Vimeo.Player(iframe);
+
+                timeControls.style.display = 'flex';
+                setActiveTimeBtn('day');
+
+                currentPlayer.ready().then(() => {
+                    currentPlayer.setCurrentTime(video.dayTime);
+                });
+            } else {
+                videoContainer.innerHTML = `
+                    <div class="hero-placeholder">
+                        <div class="color-swatch" style="background: ${video.color}; width: 120px; height: 120px;"></div>
+                        <p style="margin-top: 24px;">${video.title}</p>
+                        <p style="font-size: 0.85rem; opacity: 0.5; margin-top: 8px;">Video coming soon</p>
+                    </div>
+                `;
+                timeControls.style.display = 'none';
+                currentPlayer = null;
+            }
+        }
+
+        function resetPlayer() {
+            currentPlayer = null;
+            currentVideoData = null;
+            timeControls.style.display = 'none';
+            currentTitle.textContent = 'Choose Your Color';
+            currentSubtitle.textContent = 'Click a color card to preview';
+            videoContainer.innerHTML = `
+                <div class="hero-placeholder">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    <p>Select a color below</p>
+                </div>
+            `;
+        }
+
+        // Initial render
+        renderCards();
+    </script>
+</body>
+</html>

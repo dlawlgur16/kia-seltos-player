@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KIA SELTOS - Video Player</title>
+    <!-- Vimeo Player API -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --glass-blur: 40px;
+            --text-primary: #111111;
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --accent: #111111;
+            --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Animated Background - Clean White */
+        .mesh-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 50%, #fafafa 100%);
+            overflow: hidden;
+        }
+
+        .mesh-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.5;
+            animation: floating 25s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, #e8e8e8, #f5f5f5);
+            top: -20%;
+            left: -20%;
+        }
+
+        .orb-2 {
+            width: 45vw;
+            height: 45vw;
+            background: radial-gradient(circle, #e0e0e0, #f0f0f0);
+            bottom: -15%;
+            right: -15%;
+            animation-delay: -7s;
+        }
+
+        .orb-3 {
+            width: 25vw;
+            height: 25vw;
+            background: radial-gradient(circle, #d5d5d5, #eeeeee);
+            top: 50%;
+            left: 50%;
+            animation-delay: -12s;
+            opacity: 0.4;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translate(0, 0); }
+            33% { transform: translate(30px, -30px); }
+            66% { transform: translate(-20px, 20px); }
+        }
+
+        /* Layout */
+        .glass-layout {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-sidebar {
+            width: 350px;
+            height: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 50px 30px;
+        }
+
+        .logo-area h1 {
+            font-weight: 300;
+            font-size: 1.5rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 50px;
+            color: white;
+            border-left: 2px solid var(--accent);
+            padding-left: 15px;
+        }
+
+        .playlist-nav {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-container {
+            position: relative;
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 25px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tab-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            height: calc(100% - 8px);
+            width: calc(50% - 4px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            border-radius: 8px;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tab-slider.interior {
+            transform: translateX(calc(100% + 0px));
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab-button:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .tab-button.active {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .nav-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+
+        .playlist-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .playlist-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Playlist slide animations */
+        @keyframes slideOutLeft {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-30px); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(30px); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .playlist-content.slide-out-left { animation: slideOutLeft 0.3s ease-out forwards; }
+        .playlist-content.slide-in-right { animation: slideInRight 0.3s ease-out forwards; }
+        .playlist-content.slide-out-right { animation: slideOutRight 0.3s ease-out forwards; }
+        .playlist-content.slide-in-left { animation: slideInLeft 0.3s ease-out forwards; }
+
+        /* Fade animations */
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .video-frame.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        .video-frame.fade-in { animation: fadeIn 0.4s ease-in forwards; }
+        .stage-header h2.fade-out { animation: fadeOut 0.25s ease-out forwards; }
+        .stage-header h2.fade-in { animation: fadeIn 0.35s ease-in forwards; }
+        .line-deco.fade-out { animation: fadeOut 0.25s ease-out forwards; }
+        .line-deco.fade-in { animation: fadeIn 0.35s ease-in forwards; }
+
+        .playlist-item {
+            padding: 18px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-left: 3px solid transparent;
+            margin-bottom: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .playlist-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .item-idx {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 20px;
+        }
+
+        .playlist-item.active .item-idx {
+            color: var(--accent);
+        }
+
+        .item-title-text {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            flex: 1;
+        }
+
+        .playlist-item.active .item-title-text {
+            color: white;
+            font-weight: 600;
+        }
+
+        .glass-stage {
+            flex: 1;
+            height: 100%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stage-content {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stage-header h2 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .line-deco {
+            width: 50px;
+            height: 1px;
+            background: var(--accent);
+            margin-bottom: 30px;
+        }
+
+        .video-frame {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            position: relative;
+            border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 낮/밤 버튼 컨테이너 */
+        .time-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .time-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 110px;
+            padding: 12px 0;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .time-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .time-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 낮 아이콘 - 태양 */
+        .sun-icon {
+            fill: #f59e0b;
+        }
+
+        /* 밤 아이콘 - 달 */
+        .moon-icon {
+            fill: #6366f1;
+        }
+
+        /* 재생 아이콘 */
+        .play-icon {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 2;
+        }
+
+        @media (max-width: 900px) {
+            .glass-layout {
+                flex-direction: column;
+            }
+
+            .glass-sidebar {
+                width: 100%;
+                height: auto;
+                padding: 20px;
+            }
+
+            .glass-stage {
+                padding: 20px;
+                justify-content: flex-start;
+            }
+
+            .time-controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="mesh-background">
+        <div class="mesh-orb orb-1"></div>
+        <div class="mesh-orb orb-2"></div>
+        <div class="mesh-orb orb-3"></div>
+    </div>
+
+    <div class="glass-layout">
+        <aside class="glass-sidebar">
+            <div class="logo-area">
+                <h1>KIA<br>SELTOS</h1>
+            </div>
+            <nav class="playlist-nav">
+                <div class="tab-container">
+                    <div class="tab-slider" id="tabSlider"></div>
+                    <button class="tab-button active" data-tab="exterior">EXTERIOR</button>
+                    <button class="tab-button" data-tab="interior">INTERIOR</button>
+                </div>
+                <div class="nav-label" id="navLabel">Exterior Color</div>
+                <div id="playlist" class="playlist-content"></div>
+            </nav>
+        </aside>
+
+        <main class="glass-stage">
+            <div class="stage-content">
+                <header class="stage-header">
+                    <h2 id="currentTitle">Select a color</h2>
+                    <div class="line-deco"></div>
+                </header>
+                <div class="player-wrapper">
+                    <div id="videoContainer" class="video-frame">
+                        <div style="text-align:center; opacity:0.7;">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="svg-icon">
+                                <polygon points="5,3 19,12 5,21" stroke="white" stroke-width="1" fill="none" />
+                            </svg>
+                            <p style="margin-top:15px; font-size:0.9rem; letter-spacing:1px;">SELECT FROM LIST</p>
+                        </div>
+                    </div>
+
+                    <!-- 풀재생/낮/밤 버튼 -->
+                    <div class="time-controls">
+                        <button class="time-btn" id="fullBtn" data-time="full">
+                            <svg viewBox="0 0 24 24" class="play-icon">
+                                <polygon points="5,3 19,12 5,21" fill="#69db7c"/>
+                            </svg>
+                            FULL
+                        </button>
+                        <button class="time-btn" id="dayBtn" data-time="day">
+                            <svg viewBox="0 0 24 24" class="sun-icon">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="12" y1="21" x2="12" y2="23" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="1" y1="12" x2="3" y2="12" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="21" y1="12" x2="23" y2="12" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="#FFD700" stroke-width="2"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="#FFD700" stroke-width="2"/>
+                            </svg>
+                            DAY
+                        </button>
+                        <button class="time-btn" id="nightBtn" data-time="night">
+                            <svg viewBox="0 0 24 24" class="moon-icon">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                            NIGHT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            /**
+             * ====================================
+             * [설정 방법]
+             * ====================================
+             *
+             * 1. Vimeo에 영상을 업로드합니다.
+             * 2. 영상 URL에서 ID를 복사합니다. (예: vimeo.com/123456789 → 123456789)
+             * 3. 아래 플레이리스트에서 vimeoId를 해당 ID로 변경합니다.
+             * 4. dayTime과 nightTime은 초 단위로 설정합니다.
+             *    - dayTime: 낮 장면 시작 시간 (초)
+             *    - nightTime: 밤 장면 시작 시간 (초)
+             *
+             * 예시:
+             * - 영상에서 낮 장면이 0초부터, 밤 장면이 30초부터 시작한다면:
+             *   dayTime: 0, nightTime: 30
+             *
+             * ====================================
+             */
+
+            // 외장 색상 플레이리스트
+            const exteriorPlaylist = [
+                {
+                    title: "Snow White Pearl",
+                    vimeoId: "YOUR_VIMEO_ID_HERE", // Vimeo 영상 ID로 교체
+                    color: "#f8fafc",
+                    dayTime: 0,      // 낮 장면 시작 시간 (초)
+                    nightTime: 30    // 밤 장면 시작 시간 (초)
+                },
+                {
+                    title: "X-LINE Iceberg Green",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#a7c4bc",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "Two-Tone Snow White Pearl",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#e8eef0",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "Two-Tone Iceberg Green",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#a7c4bc",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "Gravity Gray",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#6b7280",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "Ivory Silver",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#c0c0c0",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "Fusion Black",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#1a1a1a",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "Frost Blue",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#87CEEB",
+                    dayTime: 0,
+                    nightTime: 30
+                }
+            ];
+
+            // 내장 인테리어 플레이리스트
+            const interiorPlaylist = [
+                {
+                    title: "Maroon Brown",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#8B4513",
+                    dayTime: 0,
+                    nightTime: 30
+                },
+                {
+                    title: "X-LINE Smoky Black",
+                    vimeoId: "YOUR_VIMEO_ID_HERE",
+                    color: "#2d2d2d",
+                    dayTime: 0,
+                    nightTime: 30
+                }
+            ];
+
+            let currentTab = 'exterior';
+            let currentPlaylistData = exteriorPlaylist;
+            let currentPlayer = null;
+            let currentVideoData = null;
+
+            const playlistContainer = document.getElementById('playlist');
+            const videoContainer = document.getElementById('videoContainer');
+            const titleElement = document.getElementById('currentTitle');
+            const navLabel = document.getElementById('navLabel');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabSlider = document.getElementById('tabSlider');
+            const dayBtn = document.getElementById('dayBtn');
+            const nightBtn = document.getElementById('nightBtn');
+            const fullBtn = document.getElementById('fullBtn');
+
+            // 낮/밤/풀재생 버튼 이벤트
+            dayBtn.addEventListener('click', () => {
+                if (currentPlayer && currentVideoData) {
+                    currentPlayer.setCurrentTime(currentVideoData.dayTime);
+                    currentPlayer.play();
+                    setActiveTimeBtn('day');
+                }
+            });
+
+            nightBtn.addEventListener('click', () => {
+                if (currentPlayer && currentVideoData) {
+                    currentPlayer.setCurrentTime(currentVideoData.nightTime);
+                    currentPlayer.play();
+                    setActiveTimeBtn('night');
+                }
+            });
+
+            fullBtn.addEventListener('click', () => {
+                if (currentPlayer) {
+                    currentPlayer.setCurrentTime(0);
+                    currentPlayer.play();
+                    setActiveTimeBtn('full');
+                }
+            });
+
+            function setActiveTimeBtn(time) {
+                dayBtn.classList.toggle('active', time === 'day');
+                nightBtn.classList.toggle('active', time === 'night');
+                fullBtn.classList.toggle('active', time === 'full');
+            }
+
+            // Tab 전환 기능
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tab = button.dataset.tab;
+                    if (tab === currentTab) return;
+
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    if (tab === 'exterior') {
+                        tabSlider.classList.remove('interior');
+                    } else {
+                        tabSlider.classList.add('interior');
+                    }
+
+                    const isMovingRight = (currentTab === 'exterior' && tab === 'interior');
+
+                    playlistContainer.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
+                    playlistContainer.classList.add(isMovingRight ? 'slide-out-left' : 'slide-out-right');
+
+                    setTimeout(() => {
+                        currentTab = tab;
+                        currentPlaylistData = tab === 'exterior' ? exteriorPlaylist : interiorPlaylist;
+                        navLabel.textContent = tab === 'exterior' ? 'Exterior Color' : 'Interior Color';
+
+                        renderPlaylist();
+                        resetVideo();
+
+                        playlistContainer.classList.remove('slide-out-left', 'slide-out-right');
+                        playlistContainer.classList.add(isMovingRight ? 'slide-in-right' : 'slide-in-left');
+                    }, 300);
+                });
+            });
+
+            // Playlist 렌더링 함수
+            function renderPlaylist() {
+                playlistContainer.innerHTML = '';
+                currentPlaylistData.forEach((video, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'playlist-item';
+                    const num = (index + 1).toString().padStart(2, '0');
+
+                    item.style.setProperty('--item-color', video.color);
+
+                    const dot = `<span class="color-dot" style="background-color: ${video.color};"></span>`;
+
+                    item.innerHTML = `
+                        <div class="item-row">
+                            ${dot}
+                            <span class="item-idx">${num}</span>
+                            <span class="item-title-text">${video.title}</span>
+                        </div>
+                    `;
+
+                    item.addEventListener('mouseenter', () => {
+                        item.style.background = `linear-gradient(90deg, ${video.color}22 0%, transparent 100%)`;
+                        item.style.borderLeft = `3px solid ${video.color}`;
+                    });
+
+                    item.addEventListener('mouseleave', () => {
+                        if (!item.classList.contains('active')) {
+                            item.style.background = 'transparent';
+                            item.style.borderLeft = '3px solid transparent';
+                        } else {
+                            item.style.background = `linear-gradient(90deg, ${video.color}44 0%, transparent 100%)`;
+                            item.style.borderLeft = `3px solid ${video.color}`;
+                        }
+                    });
+
+                    item.onclick = () => loadVideo(index);
+                    playlistContainer.appendChild(item);
+                });
+            }
+
+            // 비디오 초기화 함수
+            function resetVideo() {
+                if (currentPlayer) {
+                    currentPlayer.destroy();
+                    currentPlayer = null;
+                }
+                currentVideoData = null;
+
+                titleElement.textContent = 'Select a color';
+                titleElement.style.color = '#ffffff';
+                titleElement.style.textShadow = 'none';
+
+                const lineDeco = document.querySelector('.line-deco');
+                if (lineDeco) {
+                    lineDeco.style.backgroundColor = 'var(--accent)';
+                    lineDeco.style.boxShadow = 'none';
+                }
+
+                setActiveTimeBtn(null);
+
+                videoContainer.innerHTML = `
+                    <div style="text-align:center; opacity:0.7;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="svg-icon">
+                            <polygon points="5,3 19,12 5,21" stroke="white" stroke-width="1" fill="none" />
+                        </svg>
+                        <p style="margin-top:15px; font-size:0.9rem; letter-spacing:1px;">SELECT FROM LIST</p>
+                    </div>
+                `;
+            }
+
+            // 초기 렌더링
+            renderPlaylist();
+
+            window.loadVideo = function (index) {
+                const video = currentPlaylistData[index];
+                const items = document.querySelectorAll('.playlist-item');
+
+                // Reset styling for all
+                items.forEach(i => {
+                    i.classList.remove('active');
+                    i.style.background = 'transparent';
+                    i.style.borderLeft = '3px solid transparent';
+                });
+
+                // Set styling for active
+                const activeItem = items[index];
+                activeItem.classList.add('active');
+                activeItem.style.background = `linear-gradient(90deg, ${video.color}44 0%, transparent 100%)`;
+                activeItem.style.borderLeft = `3px solid ${video.color}`;
+
+                // Fade out current content
+                const lineDeco = document.querySelector('.line-deco');
+
+                videoContainer.classList.remove('fade-in');
+                videoContainer.classList.add('fade-out');
+
+                titleElement.classList.remove('fade-in');
+                titleElement.classList.add('fade-out');
+
+                if (lineDeco) {
+                    lineDeco.classList.remove('fade-in');
+                    lineDeco.classList.add('fade-out');
+                }
+
+                // Wait for fade out to complete
+                setTimeout(() => {
+                    // Update title
+                    titleElement.textContent = video.title;
+                    titleElement.style.color = '#ffffff';
+                    titleElement.style.textShadow = `0 0 30px ${video.color}88`;
+
+                    if (lineDeco) {
+                        lineDeco.style.backgroundColor = video.color;
+                        lineDeco.style.boxShadow = `0 0 10px ${video.color}`;
+                    }
+
+                    // Destroy previous player
+                    if (currentPlayer) {
+                        currentPlayer.destroy();
+                        currentPlayer = null;
+                    }
+
+                    // Store current video data
+                    currentVideoData = video;
+
+                    // Check if Vimeo ID is set
+                    if (video.vimeoId && video.vimeoId !== 'YOUR_VIMEO_ID_HERE') {
+                        // Create Vimeo iframe
+                        videoContainer.innerHTML = `
+                            <iframe
+                                id="vimeoPlayer"
+                                src="https://player.vimeo.com/video/${video.vimeoId}?autoplay=1&loop=1&muted=1&background=0&quality=1080p"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowfullscreen>
+                            </iframe>
+                        `;
+
+                        // Initialize Vimeo Player API
+                        const iframe = document.getElementById('vimeoPlayer');
+                        currentPlayer = new Vimeo.Player(iframe);
+
+                        setActiveTimeBtn('day');
+
+                        // Auto-start at day time
+                        currentPlayer.ready().then(() => {
+                            currentPlayer.setCurrentTime(video.dayTime);
+                        });
+                    } else {
+                        // Vimeo ID not set - show placeholder
+                        videoContainer.innerHTML = `
+                            <div style="text-align:center; padding:40px;">
+                                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" style="opacity:0.5;">
+                                    <polygon points="5,3 19,12 5,21" stroke="white" stroke-width="1" fill="none" />
+                                </svg>
+                                <p style="margin-top:20px; font-size:0.9rem; color: rgba(255,255,255,0.6); line-height:1.6;">
+                                    Vimeo ID가 설정되지 않았습니다.<br>
+                                    <span style="font-size:0.75rem; color: rgba(255,255,255,0.4);">
+                                        JavaScript에서 vimeoId를 설정해주세요.
+                                    </span>
+                                </p>
+                            </div>
+                        `;
+                    }
+
+                    // Fade in new content
+                    videoContainer.classList.remove('fade-out');
+                    videoContainer.classList.add('fade-in');
+
+                    titleElement.classList.remove('fade-out');
+                    titleElement.classList.add('fade-in');
+
+                    if (lineDeco) {
+                        lineDeco.classList.remove('fade-out');
+                        lineDeco.classList.add('fade-in');
+                    }
+                }, 300);
+            };
+        });
+    </script>
+</body>
+
+</html>
